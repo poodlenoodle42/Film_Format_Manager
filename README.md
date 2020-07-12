@@ -16,7 +16,7 @@ This Programm is build for video files but it might detect other media files too
     └── Titanic
         └── Some Crazy file name4.mp4
 ```
-The detected name for *Some Crazy file name.mp4* would be *The Lord of the Rings: The Fellowship of the Ring*. This is usefull because you can change the name of the underlying file or the file itself and the dected name stays constant. Using recursive searching you can also have a folder containing other folders like *The Lord of the Rings* without affecting the result.
+The detected name for *Some Crazy file name.mp4* would be *The Lord of the Rings: The Fellowship of the Ring*. This is usefull because you can change the name of the underlying file or the file itself and the detected name stays constant. Using recursive searching you can also have a folder containing other folders like *The Lord of the Rings* without affecting the result.
 ### Dependecies
 You should have *ffmpeg* and *ffprobe* installed on your system and added to the path variable. You can check whether you where succesfull by typing `ffmpeg` in your terminal.  
 ### Get the Application
