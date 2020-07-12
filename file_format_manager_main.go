@@ -36,7 +36,7 @@ func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<
 	for _, file := range files {
 		if file.IsDir() { //Directory, search recursivly in this directory
 			wg.Add(1)
-			getMoviesInDir(dir+"/"+file.Name(), file.Name(), wg, movies)
+			go getMoviesInDir(dir+"/"+file.Name(), file.Name(), wg, movies)
 		} else { // Found a movie
 			trans := new(transcoder.Transcoder)
 			err = trans.Initialize(dir+"/"+file.Name(), "")
@@ -87,10 +87,10 @@ func main() {
 	}
 	dir := os.Args[1]
 	mode := os.Args[2]
-	if !(mode == "resSmallerThen" || mode == "resBiggerThen" || mode == "sizeSmallerThen" || mode == "sizeBiggerThen" || mode == "list") {
+	if !(mode == "resSmallerThan" || mode == "resBiggerThan" || mode == "sizeSmallerThan" || mode == "sizeBiggerThan" || mode == "list") {
 		panic("No known mode")
 	}
-	if (mode == "resSmallerThen" || mode == "resBiggerThen") && len(os.Args) != 5 {
+	if (mode == "resSmallerThan" || mode == "resBiggerThan") && len(os.Args) != 5 {
 		panic("Not enough arguments")
 	}
 	size := 0
@@ -99,12 +99,13 @@ func main() {
 	if mode != "list" {
 		size, err = strconv.Atoi(os.Args[3])
 		width, err = strconv.Atoi(os.Args[3])
+		size *= 1000
 	}
 	if err != nil {
 		panic(err)
 	}
 	height := 0
-	if mode == "resSmallerThen" || mode == "resBiggerThen" {
+	if mode == "resSmallerThan" || mode == "resBiggerThan" {
 		height, err = strconv.Atoi(os.Args[4])
 		if err != nil {
 			panic(err)
@@ -126,19 +127,19 @@ func main() {
 		close(movies)
 	}()
 
-	if mode == "resSmallerThen" {
+	if mode == "resSmallerThan" {
 		printAllMoviesFullfillingReq(func(mov movie) bool {
 			return mov.videostream.Height*mov.videostream.Width < width*height
 		}, movies)
-	} else if mode == "resBiggerThen" {
+	} else if mode == "resBiggerThan" {
 		printAllMoviesFullfillingReq(func(mov movie) bool {
 			return mov.videostream.Height*mov.videostream.Width > width*height
 		}, movies)
-	} else if mode == "sizeSmallerThen" {
+	} else if mode == "sizeSmallerThan" {
 		printAllMoviesFullfillingReq(func(mov movie) bool {
 			return mov.size < size
 		}, movies)
-	} else if mode == "sizeBiggerThen" {
+	} else if mode == "sizeBiggerThan" {
 		printAllMoviesFullfillingReq(func(mov movie) bool {
 			return mov.size > size
 		}, movies)
