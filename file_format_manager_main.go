@@ -74,10 +74,14 @@ func printMovStats(mov movie) {
 }
 
 func printAllMoviesFullfillingReq(prequsite func(movie) bool, movies <-chan movie) {
+	var moviesS []movie
 	for mov := range movies {
 		if prequsite(mov) {
-			printMovStats(mov)
+			moviesS = append(moviesS, mov)
 		}
+	}
+	for _, mov := range moviesS {
+		printMovStats(mov)
 	}
 }
 
