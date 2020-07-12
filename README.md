@@ -22,26 +22,26 @@ You should have *ffmpeg* and *ffprobe* installed on your system and added to the
 ### Get the Application
 When you dont want to build it from source you can download it at the release site.
 ## How to use it?
-The following examples are for Linux but you can easily run them on Windows by replacing `./file_format_manager_main` by `file_format_manager_main.exe`
+The following examples are for Linux but you can easily run them on Windows by replacing `./file_format_manager_main_linux_amd64` by `file_format_manager_main_windows_amd64.exe`
 
 ### List all movies
 ```bash
-./file_format_manager_main [dir] list 
+./file_format_manager_main_linux_amd64 [dir] list 
 ```
 ### List all movies with a resolution bigger or smaller than a certain threshhold
 ```bash
-./file_format_manager_main [dir] resSmallerThan [width] [height] 
+./file_format_manager_main_linux_amd64 [dir] resSmallerThan [width] [height] 
 ```
 ```bash
-./file_format_manager_main [dir] resBiggerThan [width] [height] 
+./file_format_manager_main_linux_amd64 [dir] resBiggerThan [width] [height] 
 ```
 ### List all movies bigger or smaller than a certain file size
 
 ```bash
-./file_format_manager_main [dir] sizeSmallerThan [size_in_mb]
+./file_format_manager_main_linux_amd64 [dir] sizeSmallerThan [size_in_mb]
 ```
 ```bash
-./file_format_manager_main [dir] sizeBiggerThan [size_in_mb] 
+./file_format_manager_main_linux_amd64 [dir] sizeBiggerThan [size_in_mb] 
 ```
 ## How to build
 Given you have installed the golang packages correctly just type 
