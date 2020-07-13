@@ -2,8 +2,6 @@ package movie
 
 import (
 	"fmt"
-
-	"github.com/xfrr/goffmpeg/models"
 )
 
 //Movie contains important information about a movie file
@@ -12,7 +10,9 @@ type Movie struct {
 	FileName        string //Name of the file
 	Path            string //path to movie
 	Format          string
-	Videostream     models.Streams
+	Codec           string
+	Width           int
+	Height          int
 	BitRate         int
 	Duration        int
 	Size            int
@@ -36,6 +36,6 @@ func (mov *Movie) Print() {
 	fmt.Println("\t Bitrate: ", mov.BitRate)
 	fmt.Println("\t Streams: ", mov.NumberOfStreams)
 	fmt.Println("\t Video Stream: ")
-	fmt.Println("\t\t Codec: ", mov.Videostream.CodecLongName)
-	fmt.Println("\t\t Resolution: ", mov.Videostream.Width, "x", mov.Videostream.Height)
+	fmt.Println("\t\t Codec: ", mov.Codec)
+	fmt.Println("\t\t Resolution: ", mov.Width, "x", mov.Height)
 }

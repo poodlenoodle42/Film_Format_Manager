@@ -38,11 +38,12 @@ func constructMoviesFromDatabase(sqlStmt string, db *sql.DB) ([]movie.Movie, err
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var id int
 		var mov movie.Movie
-		err = rows.Scan(&id, &mov.Name, &mov.FileName, &mov.Path, &mov.Format, &mov.Videostream.CodedWidth, &mov.Videostream.CodedHeight,
-			&mov.Videostream.CodecLongName, &mov.BitRate, &mov.Duration, &mov.Size, &mov.NumberOfStreams, &mov.Status)
+		err = rows.Scan(&id, &mov.Name, &mov.FileName, &mov.Path, &mov.Format, &mov.Width, &mov.Height,
+			&mov.Codec, &mov.BitRate, &mov.Duration, &mov.Size, &mov.NumberOfStreams, &mov.Status)
 		if err != nil {
 			return movies, err
 		}

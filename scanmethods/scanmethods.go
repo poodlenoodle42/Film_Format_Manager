@@ -44,7 +44,9 @@ func GetAllMovies(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- 
 			mov.Size = int(file.Size())
 			mov.Path = dir + "/" + file.Name()
 			mov.NumberOfStreams = len(trans.MediaFile().Metadata().Streams)
-			mov.Videostream = trans.MediaFile().Metadata().Streams[0]
+			mov.Codec = trans.MediaFile().Metadata().Streams[0].CodecLongName
+			mov.Width = trans.MediaFile().Metadata().Streams[0].CodedWidth
+			mov.Height = trans.MediaFile().Metadata().Streams[0].CodedHeight
 			mov.Status = 0
 			movies <- mov
 		}
@@ -64,18 +66,29 @@ func GetAllNewMovies(dir string, lastDir string, wg *sync.WaitGroup, movies chan
 	for _, file := range files {
 		if file.IsDir() { //Directory, search recursivly in this directory
 			wg.Add(1)
-			go GetAllMovies(dir+"/"+file.Name(), file.Name(), wg, movies)
+			go GetAllNewMovies(dir+"/"+file.Name(), file.Name(), wg, movies, db, table)
 		} else { // Found a movie
 
 			var mov movie.Movie
 			mov.Name = lastDir
 			mov.Size = int(file.Size())
+			mov.FileName = file.Name()
+			mov.Status = 0
+			mov.Path = dir + "/" + file.Name()
 			b, err := databaseaccess.IsMovieInDB(mov, table, db)
 			if err != nil {
 				//fmt.Println(err)
 				continue
 			}
 			if !b { //Movie is not known
+				m, err := databaseaccess.OtherVersion(mov, table, db)
+				if err != nil {
+					continue
+				}
+				if m == 0 { // Movie just got renamed
+					err = databaseaccess.UpdateMovieStatus(mov, table, db)
+					continue
+				}
 				trans := new(transcoder.Transcoder)
 				err = trans.Initialize(dir+"/"+file.Name(), "")
 				if err != nil {
@@ -85,10 +98,10 @@ func GetAllNewMovies(dir string, lastDir string, wg *sync.WaitGroup, movies chan
 				mov.Format = trans.MediaFile().Metadata().Format.FormatLongName
 				mov.BitRate, _ = strconv.Atoi(trans.MediaFile().Metadata().Format.BitRate)
 				mov.Duration, _ = strconv.Atoi(trans.MediaFile().Metadata().Format.Duration)
-				mov.FileName = file.Name()
-				mov.Path = dir + "/" + file.Name()
 				mov.NumberOfStreams = len(trans.MediaFile().Metadata().Streams)
-				mov.Videostream = trans.MediaFile().Metadata().Streams[0]
+				mov.Codec = trans.MediaFile().Metadata().Streams[0].CodecLongName
+				mov.Width = trans.MediaFile().Metadata().Streams[0].CodedWidth
+				mov.Height = trans.MediaFile().Metadata().Streams[0].CodedHeight
 				mov.Status = 0
 				movies <- mov
 			}
@@ -111,17 +124,22 @@ func UpdateMovieStates(table string, db *sql.DB) error {
 				return err
 			}
 		} else { //File is not accessible
-			b, err := databaseaccess.OtherVersion(mov, table, db)
+			m, err := databaseaccess.OtherVersion(mov, table, db)
 			if err != nil {
 				return err
 			}
-			if b { //There is an other version update status to 1
+			if m == 0 { //There is a version with the same size but diffrent file name, delete this old version
+				err = databaseaccess.DeleteMovie(mov, table, db)
+				if err != nil {
+					return err
+				}
+			} else if m == 1 { //There is an other version update status to 1
 				mov.Status = 1
 				err = databaseaccess.UpdateMovieStatus(mov, table, db)
 				if err != nil {
 					return err
 				}
-			} else { //There is no other version update status to 2
+			} else if m == 2 { //There is no other version update status to 2
 				mov.Status = 2
 				err = databaseaccess.UpdateMovieStatus(mov, table, db)
 				if err != nil {

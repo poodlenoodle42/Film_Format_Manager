@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/poodlenoodle42/Film_Format_Manager/scanmethods"
@@ -52,7 +53,7 @@ func update(path string) {
 	moviesChan := make(chan movie.Movie)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	scanmethods.GetAllNewMovies(path, "", &wg, moviesChan, db, path)
+	go scanmethods.GetAllNewMovies(path, "", &wg, moviesChan, db, path)
 	go func() {
 		wg.Wait()
 		close(moviesChan)
@@ -62,7 +63,6 @@ func update(path string) {
 		moviesS = append(moviesS, mov)
 	}
 	for _, mov := range moviesS {
-		mov.Print()
 		err = databaseaccess.AddMovie(mov, path, db)
 		checkError(err)
 	}
@@ -84,7 +84,7 @@ func printAllPred(pred func(movie.Movie) bool, path string) {
 }
 
 func main() {
-	modes := [...]string{"resSmallerThan", "resBiggerThan", "sizeSmallerThan", "sizeBiggerThan", "all"}
+	modes := [...]string{"resSmallerThan", "resBiggerThan", "sizeSmallerThan", "sizeBiggerThan", "all", "nameEq", "nameCont"}
 	commands := [...]string{"fullUpdate", "Update", "list"}
 	if len(os.Args) < 3 {
 		panic("Not enough arguments")
@@ -103,7 +103,7 @@ func main() {
 			height, err := strconv.Atoi(os.Args[5])
 			checkError(err)
 			printAllPred(func(mov movie.Movie) bool {
-				return mov.Videostream.CodedHeight*mov.Videostream.CodedWidth < width*height
+				return mov.Height*mov.Width < width*height
 			}, path)
 		} else if mode == modes[1] { //resBiggerThan
 			width, err := strconv.Atoi(os.Args[4])
@@ -111,24 +111,36 @@ func main() {
 			height, err := strconv.Atoi(os.Args[5])
 			checkError(err)
 			printAllPred(func(mov movie.Movie) bool {
-				return mov.Videostream.CodedHeight*mov.Videostream.CodedWidth > width*height
+				return mov.Height*mov.Width > width*height
 			}, path)
 		} else if mode == modes[2] { // sizeSmallerThan
 			size, err := strconv.Atoi(os.Args[4])
 			checkError(err)
 			printAllPred(func(mov movie.Movie) bool {
-				return mov.Size < size
+				return mov.Size < size*1000000
 			}, path)
-		} else if mode == modes[2] { // sizeBiggerThan
+		} else if mode == modes[3] { // sizeBiggerThan
 			size, err := strconv.Atoi(os.Args[4])
 			checkError(err)
 			printAllPred(func(mov movie.Movie) bool {
-				return mov.Size > size
+				return mov.Size > size*1000000
 			}, path)
-		} else if mode == modes[2] { // all
+		} else if mode == modes[4] { // all
 			printAllPred(func(mov movie.Movie) bool {
 				return true
 			}, path)
+		} else if mode == modes[5] { // nameEq
+			name := os.Args[4]
+			printAllPred(func(mov movie.Movie) bool {
+				return mov.Name == name
+			}, path)
+		} else if mode == modes[6] { //nameCont
+			name := os.Args[4]
+			printAllPred(func(mov movie.Movie) bool {
+				return strings.Contains(mov.Name, name)
+			}, path)
+		} else {
+			fmt.Println("No known command")
 		}
 	} else {
 		fmt.Println("No known command")

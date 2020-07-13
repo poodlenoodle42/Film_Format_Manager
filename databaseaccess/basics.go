@@ -52,23 +52,23 @@ func AddMovie(mov movie.Movie, table string, db *sql.DB) error {
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec(
-		mov.Name, mov.FileName, mov.Path, mov.Format, mov.Videostream.CodedWidth, mov.Videostream.CodedHeight,
-		mov.Videostream.CodecLongName, mov.BitRate, mov.Duration, mov.Size, mov.NumberOfStreams, mov.Status)
+		mov.Name, mov.FileName, mov.Path, mov.Format, mov.Width, mov.Height,
+		mov.Codec, mov.BitRate, mov.Duration, mov.Size, mov.NumberOfStreams, mov.Status)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-//IsMovieInDB checks if a table in a Database containes a given movie by comparing name and size
+//IsMovieInDB checks if a table in a Database containes a given movie by comparing name, size and FileName
 func IsMovieInDB(mov movie.Movie, table string, db *sql.DB) (bool, error) {
-	sqlStmt := "SELECT EXISTS (SELECT 1 FROM \"" + table + "\" WHERE Name = ? AND Size = ?);"
+	sqlStmt := "SELECT EXISTS (SELECT 1 FROM \"" + table + "\" WHERE Name = ? AND Size = ? AND FileName = ?);"
 	stmt, err := db.Prepare(sqlStmt)
 	if err != nil {
 		return false, err
 	}
 	defer stmt.Close()
-	result := stmt.QueryRow(mov.Name, mov.Size)
+	result := stmt.QueryRow(mov.Name, mov.Size, mov.FileName)
 	if err != nil {
 		return false, err
 	}
@@ -78,41 +78,62 @@ func IsMovieInDB(mov movie.Movie, table string, db *sql.DB) (bool, error) {
 }
 
 //OtherVersion checks if the database containes a Movie with the same name but diffrent properties
-//-> fullfilling the requirements for status 1 "Removed, diffrent file available"
-func OtherVersion(mov movie.Movie, table string, db *sql.DB) (bool, error) {
-	sqlStmt := "SELECT Name,Size FROM \"" + table + "\" WHERE Name = ? AND Size = ?;"
+//-> returns uint
+//0 "File got renamed"
+//1 "Removed, diffrent file available"
+//2 "Removed" / Error
+func OtherVersion(mov movie.Movie, table string, db *sql.DB) (uint, error) {
+	sqlStmt := "SELECT Name,Size,FileName FROM \"" + table + "\" WHERE Name = ? AND Status = 0;"
 	stmt, err := db.Prepare(sqlStmt)
 	if err != nil {
-		return false, err
+		return 2, err
 	}
 	defer stmt.Close()
-	rows, err := stmt.Query(mov.Name, mov.Size)
+	rows, err := stmt.Query(mov.Name)
 	if err != nil {
-		return false, err
+		return 2, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var movR movie.Movie
-		err = rows.Scan(&movR.Name, &movR.Size)
+		err = rows.Scan(&movR.Name, &movR.Size, &movR.FileName)
 		if err != nil {
-			return false, err
+			return 2, err
 		}
 		if movR.Name == mov.Name && movR.Size != mov.Size {
-			return true, nil
+			return 1, nil
+		} else if movR.Name == mov.Name && movR.Size == mov.Size && movR.FileName != mov.FileName {
+			return 0, nil
 		}
 	}
-	return false, nil
+	return 2, nil
 
 }
 
-//UpdateMovieStatus Updates the status of a movie
+//UpdateMovieStatus Updates the status and FileName of a movie
 func UpdateMovieStatus(mov movie.Movie, table string, db *sql.DB) error {
-	sqlStmt := fmt.Sprintf("UPDATE \"%s\" SET Status = %d WHERE Name = \"%s\" AND Size = %d", table, mov.Status, mov.Name, mov.Size)
+	sqlStmt := fmt.Sprintf("UPDATE \"%s\" SET Status = %d,FileName = \"%s\",Path = \"%s\" WHERE Name = \"%s\" AND Size = %d", table, mov.Status, mov.FileName, mov.Path, mov.Name, mov.Size)
 	stmt, err := db.Prepare(sqlStmt)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	_, err = stmt.Exec()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//DeleteMovie deletes a movie based on its Name, Size and FileName
+func DeleteMovie(mov movie.Movie, table string, db *sql.DB) error {
+	sqlStmt := fmt.Sprintf("DELETE FROM \"%s\" WHERE Name = ? AND Size = ? AND FileName = ?", table)
+	stmt, err := db.Prepare(sqlStmt)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(mov.Name, mov.Size, mov.FileName)
 	if err != nil {
 		return err
 	}
