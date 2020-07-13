@@ -7,22 +7,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/xfrr/goffmpeg/models"
-
 	"github.com/xfrr/goffmpeg/transcoder"
 )
-
-type movie struct {
-	name            string //Equivalent to dir containing the movie
-	fileName        string //Name of the file
-	path            string //path to movie
-	format          string
-	videostream     models.Streams
-	bitRate         string
-	duration        string
-	size            int
-	numberOfStreams int
-}
 
 func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- movie) {
 
@@ -86,15 +72,16 @@ func printAllMoviesFullfillingReq(prequsite func(movie) bool, movies <-chan movi
 }
 
 func main() {
+	modes := [...]string{"resSmallerThan", "resBiggerThan", "sizeSmallerThan", "sizeBiggerThan", "list"}
 	if len(os.Args) < 3 {
 		panic("Not enough arguments")
 	}
 	dir := os.Args[1]
 	mode := os.Args[2]
-	if !(mode == "resSmallerThan" || mode == "resBiggerThan" || mode == "sizeSmallerThan" || mode == "sizeBiggerThan" || mode == "list") {
+	if !(mode == modes[0] || mode == modes[1] || mode == modes[2] || mode == modes[3] || mode == modes[4]) {
 		panic("No known mode")
 	}
-	if (mode == "resSmallerThan" || mode == "resBiggerThan") && len(os.Args) != 5 {
+	if (mode == mode[0] || mode == mode[1]) && len(os.Args) != 5 {
 		panic("Not enough arguments")
 	}
 	size := 0
@@ -109,7 +96,7 @@ func main() {
 		panic(err)
 	}
 	height := 0
-	if mode == "resSmallerThan" || mode == "resBiggerThan" {
+	if mode == modes[0] || mode == modes[1] {
 		height, err = strconv.Atoi(os.Args[4])
 		if err != nil {
 			panic(err)

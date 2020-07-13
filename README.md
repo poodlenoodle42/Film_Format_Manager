@@ -22,36 +22,36 @@ You should have *ffmpeg* and *ffprobe* installed on your system and added to the
 ### Get the Application
 When you dont want to build it from source you can download it at the release site.
 ## How to use it?
-The following examples are for Linux but you can easily run them on Windows by replacing `./file_format_manager_main_linux_amd64` by `file_format_manager_main_windows_amd64.exe`
+The following examples are for Linux but you can easily run them on Windows by replacing `./film_format_manager_main_linux_amd64` by `film_format_manager_main_windows_amd64.exe`
 
 ### List all movies
 ```bash
-./file_format_manager_main_linux_amd64 [dir] list 
+./film_format_manager_main_linux_amd64 [dir] list 
 ```
 ### List all movies with a resolution bigger or smaller than a certain threshhold
 ```bash
-./file_format_manager_main_linux_amd64 [dir] resSmallerThan [width] [height] 
+./film_format_manager_main_linux_amd64 [dir] resSmallerThan [width] [height] 
 ```
 ```bash
-./file_format_manager_main_linux_amd64 [dir] resBiggerThan [width] [height] 
+./film_format_manager_main_linux_amd64 [dir] resBiggerThan [width] [height] 
 ```
 ### List all movies bigger or smaller than a certain file size
 
 ```bash
-./file_format_manager_main_linux_amd64 [dir] sizeSmallerThan [size_in_mb]
+./film_format_manager_main_linux_amd64 [dir] sizeSmallerThan [size_in_mb]
 ```
 ```bash
-./file_format_manager_main_linux_amd64 [dir] sizeBiggerThan [size_in_mb] 
+./film_format_manager_main_linux_amd64 [dir] sizeBiggerThan [size_in_mb] 
 ```
 ## How to build
 Given you have installed the golang packages correctly just type 
 ```bash
-go build file_format_manager_main.go
+go build film_format_manager_main.go
 ```
 in the directory you cloned this repository to.
 ### Why is there every exectuable twice
 This programm uses concurrency to speed up its task. Your network storage might not like this.
 So all executables with *_asyncpreemptoff* suffix are compiled using `GODEBUG=asyncpreemptoff=1` in front of the `go build ...` comand. The hole command to build such an executable is there for:
 ```bash
-GODEBUG=asyncpreemptoff=1 go build file_format_manager_main.go
+GODEBUG=asyncpreemptoff=1 go build film_format_manager_main.go
 ```
