@@ -3,3 +3,4 @@
 Build/
 build_all.sh
 film_format_manager_main
+database.sqlite
