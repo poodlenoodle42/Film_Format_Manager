@@ -1,57 +1,39 @@
 package main
 
 import (
-	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
 
+	"github.com/poodlenoodle42/Film_Format_Manager/databaseaccess"
 	"github.com/poodlenoodle42/Film_Format_Manager/movie"
-	"github.com/xfrr/goffmpeg/transcoder"
+	"github.com/poodlenoodle42/Film_Format_Manager/scanmethods"
 )
-
-func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- movie.Movie) {
-
-	defer wg.Done()
-	fmt.Println("Checking ", dir)
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		//fmt.Println(err)
-		return
-	}
-	for _, file := range files {
-		if file.IsDir() { //Directory, search recursivly in this directory
-			wg.Add(1)
-			go getMoviesInDir(dir+"/"+file.Name(), file.Name(), wg, movies)
-		} else { // Found a movie
-			trans := new(transcoder.Transcoder)
-			err = trans.Initialize(dir+"/"+file.Name(), "")
-			if err != nil {
-				//fmt.Println(err)
-				continue
-			}
-			var mov movie.Movie
-			mov.Format = trans.MediaFile().Metadata().Format.FormatLongName
-			mov.BitRate = trans.MediaFile().Metadata().Format.BitRate
-			mov.Duration = trans.MediaFile().Metadata().Format.Duration
-			mov.Name = lastDir
-			mov.FileName = file.Name()
-			mov.Size = int(file.Size())
-			mov.Path = dir + "/" + file.Name()
-			mov.NumberOfStreams = len(trans.MediaFile().Metadata().Streams)
-			mov.Videostream = trans.MediaFile().Metadata().Streams[0]
-			movies <- mov
-		}
-	}
-
-}
 
 func printAllMoviesFullfillingReq(prequsite func(movie.Movie) bool, movies <-chan movie.Movie) {
 	var moviesS []movie.Movie
+	db, err := databaseaccess.OpenDatabase("database.sqlite")
+	defer db.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = databaseaccess.CreateNewDirectoryTable("/Videos", db)
+	if err != nil {
+		panic(err)
+	}
 	for mov := range movies {
 		if prequsite(mov) {
 			moviesS = append(moviesS, mov)
+			b, err := databaseaccess.IsMovieInDB(mov, "/Videos", db)
+			if err != nil {
+				panic(err)
+			}
+			if !b {
+				err = databaseaccess.AddMovie(mov, "/Videos", db)
+			}
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 	for _, mov := range moviesS {
@@ -96,10 +78,9 @@ func main() {
 	}
 
 	movies := make(chan movie.Movie)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go getMoviesInDir(dir, "", &wg, movies)
+	go scanmethods.GetAllMovies(dir, "", &wg, movies)
 	// Close the channel when all goroutines are finished
 	go func() {
 		wg.Wait()
