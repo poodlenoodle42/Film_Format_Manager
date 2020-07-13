@@ -1,6 +1,6 @@
 # Film_Format_Manager
 ## Whats it all about?
-This little programm recursivly scans a directory containing video files and prints out important meta information when the video matches a given requirement. This can be used to gather information about the quality of your media libary and to keep track of which movies you already upscaled using AI for example.
+This little programm recursivly scans a directory containing video files and saves important meta informations. This meta information can than be searched through to find movies matching certain requirements. This can be used to gather information about the quality of your media libary. For example to keep track of which movies you already upscaled using AI.
 ## Preparations
 ### File Structure
 This Programm is build for video files but it might detect other media files too. It assumes that every movie lies in a directory named like the movie in it. So assuming the following example structure: 
@@ -23,26 +23,50 @@ You should have *ffmpeg* and *ffprobe* installed on your system and added to the
 When you dont want to build it from source you can download it at the release site.
 ## How to use it?
 The following examples are for Linux but you can easily run them on Windows by replacing `./film_format_manager_main_linux_amd64` by `film_format_manager_main_windows_amd64.exe`
+### Update
+This operation requires access to the folder to be scanned.
+```bash
+./film_format_manager_main_linux_amd64 [dir] Update
+```
+Updates the database with information from this directory. Preserves informations about older files by setting their status. Only scans completely new files and those changed.
+### fullUpdate
+This operation requires access to the folder to be scanned.
+```bash
+./film_format_manager_main_linux_amd64 [dir] fullUpdate
+```
+Updates the database with information from this directory. Deletes old information and scanns all files newly.
+### list
+This opertation requires no access to the folder to be searched. It only opertates on the database created using *Update* or *fullUpdate*. 
+```bash
+./film_format_manager_main_linux_amd64 [dir] list [criteria]
+```
+Prints all entrys matching a given criteria.
+#### resSmallerThan / resBiggerThan
+```bash
+./film_format_manager_main_linux_amd64 [dir] list resSmallerThan [width] [height]
+```
+Prints all movies having a resolution smaller (or bigger respectively) than a threshold.
+#### sizeSmallerThan / sizeBiggerThan
+```bash
+./film_format_manager_main_linux_amd64 [dir] list sizeSmallerThan [size in mb]
+```
+Prints all movies having a size smaller (or bigger respectively) than a threshold.
+#### nameEq
+```bash
+./film_format_manager_main_linux_amd64 [dir] list nameEq [name]
+```
+Prints all movies having exactly this name.
 
-### List all movies
+#### nameCont
 ```bash
-./film_format_manager_main_linux_amd64 [dir] list 
+./film_format_manager_main_linux_amd64 [dir] list nameCont [sub_name]
 ```
-### List all movies with a resolution bigger or smaller than a certain threshhold
+Prints all movies which name contains the given sub_name.
+#### all
 ```bash
-./film_format_manager_main_linux_amd64 [dir] resSmallerThan [width] [height] 
+./film_format_manager_main_linux_amd64 [dir] list all
 ```
-```bash
-./film_format_manager_main_linux_amd64 [dir] resBiggerThan [width] [height] 
-```
-### List all movies bigger or smaller than a certain file size
-
-```bash
-./film_format_manager_main_linux_amd64 [dir] sizeSmallerThan [size_in_mb]
-```
-```bash
-./film_format_manager_main_linux_amd64 [dir] sizeBiggerThan [size_in_mb] 
-```
+Prints all movies.
 ## How to build
 Given you have installed the golang packages correctly just type 
 ```bash
