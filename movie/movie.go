@@ -2,7 +2,7 @@ package movie
 
 import "github.com/xfrr/goffmpeg/models"
 
-type movie struct {
+type Movie struct {
 	name            string //Equivalent to dir containing the movie
 	fileName        string //Name of the file
 	path            string //path to movie
