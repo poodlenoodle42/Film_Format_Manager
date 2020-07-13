@@ -3,13 +3,13 @@ package movie
 import "github.com/xfrr/goffmpeg/models"
 
 type Movie struct {
-	name            string //Equivalent to dir containing the movie
-	fileName        string //Name of the file
-	path            string //path to movie
-	format          string
-	videostream     models.Streams
-	bitRate         string
-	duration        string
-	size            int
-	numberOfStreams int
+	Name            string //Equivalent to dir containing the movie
+	FileName        string //Name of the file
+	Path            string //path to movie
+	Format          string
+	Videostream     models.Streams
+	BitRate         string
+	Duration        string
+	Size            int
+	NumberOfStreams int
 }

@@ -7,10 +7,11 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/poodlenoodle42/Film_Format_Manager/movie"
 	"github.com/xfrr/goffmpeg/transcoder"
 )
 
-func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- movie) {
+func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- movie.Movie) {
 
 	defer wg.Done()
 	fmt.Println("Checking ", dir)
@@ -30,37 +31,37 @@ func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<
 				//fmt.Println(err)
 				continue
 			}
-			var mov movie
-			mov.format = trans.MediaFile().Metadata().Format.FormatLongName
-			mov.bitRate = trans.MediaFile().Metadata().Format.BitRate
-			mov.duration = trans.MediaFile().Metadata().Format.Duration
-			mov.name = lastDir
-			mov.fileName = file.Name()
-			mov.size = int(file.Size())
-			mov.path = dir + "/" + file.Name()
-			mov.numberOfStreams = len(trans.MediaFile().Metadata().Streams)
-			mov.videostream = trans.MediaFile().Metadata().Streams[0]
+			var mov movie.Movie
+			mov.Format = trans.MediaFile().Metadata().Format.FormatLongName
+			mov.BitRate = trans.MediaFile().Metadata().Format.BitRate
+			mov.Duration = trans.MediaFile().Metadata().Format.Duration
+			mov.Name = lastDir
+			mov.FileName = file.Name()
+			mov.Size = int(file.Size())
+			mov.Path = dir + "/" + file.Name()
+			mov.NumberOfStreams = len(trans.MediaFile().Metadata().Streams)
+			mov.Videostream = trans.MediaFile().Metadata().Streams[0]
 			movies <- mov
 		}
 	}
 
 }
 
-func printMovStats(mov movie) {
-	fmt.Println(mov.name)
-	fmt.Println("\t Filename: ", mov.fileName)
-	fmt.Println("\t Format: ", mov.format)
-	fmt.Println("\t Size: ", float64(mov.size)/1000000.0, " MB")
-	fmt.Println("\t Duration: ", mov.duration)
-	fmt.Println("\t Bitrate: ", mov.bitRate)
-	fmt.Println("\t Streams: ", mov.numberOfStreams)
+func printMovStats(mov movie.Movie) {
+	fmt.Println(mov.Name)
+	fmt.Println("\t Filename: ", mov.FileName)
+	fmt.Println("\t Format: ", mov.Format)
+	fmt.Println("\t Size: ", float64(mov.Size)/1000000.0, " MB")
+	fmt.Println("\t Duration: ", mov.Duration)
+	fmt.Println("\t Bitrate: ", mov.BitRate)
+	fmt.Println("\t Streams: ", mov.NumberOfStreams)
 	fmt.Println("\t Video Stream: ")
-	fmt.Println("\t\t Codec: ", mov.videostream.CodecLongName)
-	fmt.Println("\t\t Resolution: ", mov.videostream.Width, "x", mov.videostream.Height)
+	fmt.Println("\t\t Codec: ", mov.Videostream.CodecLongName)
+	fmt.Println("\t\t Resolution: ", mov.Videostream.Width, "x", mov.Videostream.Height)
 }
 
-func printAllMoviesFullfillingReq(prequsite func(movie) bool, movies <-chan movie) {
-	var moviesS []movie
+func printAllMoviesFullfillingReq(prequsite func(movie.Movie) bool, movies <-chan movie.Movie) {
+	var moviesS []movie.Movie
 	for mov := range movies {
 		if prequsite(mov) {
 			moviesS = append(moviesS, mov)
@@ -81,7 +82,7 @@ func main() {
 	if !(mode == modes[0] || mode == modes[1] || mode == modes[2] || mode == modes[3] || mode == modes[4]) {
 		panic("No known mode")
 	}
-	if (mode == mode[0] || mode == mode[1]) && len(os.Args) != 5 {
+	if (mode == modes[0] || mode == modes[1]) && len(os.Args) != 5 {
 		panic("Not enough arguments")
 	}
 	size := 0
@@ -107,7 +108,7 @@ func main() {
 		panic(err)
 	}
 
-	movies := make(chan movie)
+	movies := make(chan movie.Movie)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -119,23 +120,23 @@ func main() {
 	}()
 
 	if mode == "resSmallerThan" {
-		printAllMoviesFullfillingReq(func(mov movie) bool {
-			return mov.videostream.Height*mov.videostream.Width < width*height
+		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
+			return mov.Videostream.Height*mov.Videostream.Width < width*height
 		}, movies)
 	} else if mode == "resBiggerThan" {
-		printAllMoviesFullfillingReq(func(mov movie) bool {
-			return mov.videostream.Height*mov.videostream.Width > width*height
+		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
+			return mov.Videostream.Height*mov.Videostream.Width > width*height
 		}, movies)
 	} else if mode == "sizeSmallerThan" {
-		printAllMoviesFullfillingReq(func(mov movie) bool {
-			return mov.size < size
+		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
+			return mov.Size < size
 		}, movies)
 	} else if mode == "sizeBiggerThan" {
-		printAllMoviesFullfillingReq(func(mov movie) bool {
-			return mov.size > size
+		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
+			return mov.Size > size
 		}, movies)
 	} else if mode == "list" {
-		printAllMoviesFullfillingReq(func(mov movie) bool {
+		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
 			return true
 		}, movies)
 	}
