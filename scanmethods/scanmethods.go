@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/xfrr/goffmpeg/transcoder"
 )
 
+//GetAllMovies returns all movies in the directory and all subdirectorys through the channel
 func GetAllMovies(dir string, lastDir string, wg *sync.WaitGroup, movies chan<- movie.Movie) {
 
 	defer wg.Done()
@@ -94,4 +96,39 @@ func GetAllNewMovies(dir string, lastDir string, wg *sync.WaitGroup, movies chan
 	}
 }
 
-func CheckMovieStates() {}
+//UpdateMovieStates goes through all movies of a table, checks if they are accesible and updates their status accordingly
+func UpdateMovieStates(table string, db *sql.DB) error {
+	movies, err := databaseaccess.GetAllMovies(table, db)
+	if err != nil {
+		return err
+	}
+	for _, mov := range movies {
+		_, err := os.Open(mov.Path)
+		if err == nil { // File is accessible update status to 0
+			mov.Status = 0
+			err = databaseaccess.UpdateMovieStatus(mov, table, db)
+			if err != nil {
+				return err
+			}
+		} else { //File is not accessible
+			b, err := databaseaccess.OtherVersion(mov, table, db)
+			if err != nil {
+				return err
+			}
+			if b { //There is an other version update status to 1
+				mov.Status = 1
+				err = databaseaccess.UpdateMovieStatus(mov, table, db)
+				if err != nil {
+					return err
+				}
+			} else { //There is no other version update status to 2
+				mov.Status = 2
+				err = databaseaccess.UpdateMovieStatus(mov, table, db)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}

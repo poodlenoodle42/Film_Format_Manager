@@ -1,112 +1,137 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
 
+	"github.com/poodlenoodle42/Film_Format_Manager/scanmethods"
+
 	"github.com/poodlenoodle42/Film_Format_Manager/databaseaccess"
 	"github.com/poodlenoodle42/Film_Format_Manager/movie"
-	"github.com/poodlenoodle42/Film_Format_Manager/scanmethods"
 )
 
-func printAllMoviesFullfillingReq(prequsite func(movie.Movie) bool, movies <-chan movie.Movie) {
-	var moviesS []movie.Movie
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func fullUpdate(path string) {
 	db, err := databaseaccess.OpenDatabase("database.sqlite")
-	defer db.Close()
-	if err != nil {
-		panic(err)
-	}
-	err = databaseaccess.CreateNewDirectoryTable("/Videos", db)
-	if err != nil {
-		panic(err)
-	}
-	for mov := range movies {
-		if prequsite(mov) {
-			moviesS = append(moviesS, mov)
-			b, err := databaseaccess.IsMovieInDB(mov, "/Videos", db)
-			if err != nil {
-				panic(err)
-			}
-			if !b {
-				err = databaseaccess.AddMovie(mov, "/Videos", db)
-			}
-			if err != nil {
-				panic(err)
-			}
-		}
+	checkError(err)
+	err = databaseaccess.DeleteTable(path, db)
+	checkError(err)
+	err = databaseaccess.CreateNewDirectoryTable(path, db)
+	moviesChan := make(chan movie.Movie)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	scanmethods.GetAllMovies(path, "", &wg, moviesChan)
+	go func() {
+		wg.Wait()
+		close(moviesChan)
+	}()
+	var moviesS []movie.Movie
+	for mov := range moviesChan {
+		moviesS = append(moviesS, mov)
 	}
 	for _, mov := range moviesS {
 		mov.Print()
+		err = databaseaccess.AddMovie(mov, path, db)
+		checkError(err)
+	}
+	fmt.Println("Full Update Success")
+}
+
+func update(path string) {
+	db, err := databaseaccess.OpenDatabase("database.sqlite")
+	checkError(err)
+	err = databaseaccess.CreateNewDirectoryTable(path, db)
+	checkError(err)
+	moviesChan := make(chan movie.Movie)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	scanmethods.GetAllNewMovies(path, "", &wg, moviesChan, db, path)
+	go func() {
+		wg.Wait()
+		close(moviesChan)
+	}()
+	var moviesS []movie.Movie
+	for mov := range moviesChan {
+		moviesS = append(moviesS, mov)
+	}
+	for _, mov := range moviesS {
+		mov.Print()
+		err = databaseaccess.AddMovie(mov, path, db)
+		checkError(err)
+	}
+	err = scanmethods.UpdateMovieStates(path, db)
+	checkError(err)
+	fmt.Println("Update Success")
+}
+
+func printAllPred(pred func(movie.Movie) bool, path string) {
+	db, err := databaseaccess.OpenDatabase("database.sqlite")
+	checkError(err)
+	movies, err := databaseaccess.GetAllMovies(path, db)
+	checkError(err)
+	for _, mov := range movies {
+		if pred(mov) {
+			mov.Print()
+		}
 	}
 }
 
 func main() {
-	modes := [...]string{"resSmallerThan", "resBiggerThan", "sizeSmallerThan", "sizeBiggerThan", "list"}
+	modes := [...]string{"resSmallerThan", "resBiggerThan", "sizeSmallerThan", "sizeBiggerThan", "all"}
+	commands := [...]string{"fullUpdate", "Update", "list"}
 	if len(os.Args) < 3 {
 		panic("Not enough arguments")
 	}
-	dir := os.Args[1]
-	mode := os.Args[2]
-	if !(mode == modes[0] || mode == modes[1] || mode == modes[2] || mode == modes[3] || mode == modes[4]) {
-		panic("No known mode")
-	}
-	if (mode == modes[0] || mode == modes[1]) && len(os.Args) != 5 {
-		panic("Not enough arguments")
-	}
-	size := 0
-	width := 0
-	var err error
-	if mode != "list" {
-		size, err = strconv.Atoi(os.Args[3])
-		width, err = strconv.Atoi(os.Args[3])
-		size *= 1000
-	}
-	if err != nil {
-		panic(err)
-	}
-	height := 0
-	if mode == modes[0] || mode == modes[1] {
-		height, err = strconv.Atoi(os.Args[4])
-		if err != nil {
-			panic(err)
+	path := os.Args[1]
+	command := os.Args[2]
+	if command == commands[0] { // fullUpdate
+		fullUpdate(path)
+	} else if command == commands[1] { // Update
+		update(path)
+	} else if command == commands[2] { // list
+		mode := os.Args[3]
+		if mode == modes[0] { // resSmallerThan
+			width, err := strconv.Atoi(os.Args[4])
+			checkError(err)
+			height, err := strconv.Atoi(os.Args[5])
+			checkError(err)
+			printAllPred(func(mov movie.Movie) bool {
+				return mov.Videostream.CodedHeight*mov.Videostream.CodedWidth < width*height
+			}, path)
+		} else if mode == modes[1] { //resBiggerThan
+			width, err := strconv.Atoi(os.Args[4])
+			checkError(err)
+			height, err := strconv.Atoi(os.Args[5])
+			checkError(err)
+			printAllPred(func(mov movie.Movie) bool {
+				return mov.Videostream.CodedHeight*mov.Videostream.CodedWidth > width*height
+			}, path)
+		} else if mode == modes[2] { // sizeSmallerThan
+			size, err := strconv.Atoi(os.Args[4])
+			checkError(err)
+			printAllPred(func(mov movie.Movie) bool {
+				return mov.Size < size
+			}, path)
+		} else if mode == modes[2] { // sizeBiggerThan
+			size, err := strconv.Atoi(os.Args[4])
+			checkError(err)
+			printAllPred(func(mov movie.Movie) bool {
+				return mov.Size > size
+			}, path)
+		} else if mode == modes[2] { // all
+			printAllPred(func(mov movie.Movie) bool {
+				return true
+			}, path)
 		}
-	}
-
-	if err != nil {
-		panic(err)
-	}
-
-	movies := make(chan movie.Movie)
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go scanmethods.GetAllMovies(dir, "", &wg, movies)
-	// Close the channel when all goroutines are finished
-	go func() {
-		wg.Wait()
-		close(movies)
-	}()
-
-	if mode == "resSmallerThan" {
-		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
-			return mov.Videostream.Height*mov.Videostream.Width < width*height
-		}, movies)
-	} else if mode == "resBiggerThan" {
-		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
-			return mov.Videostream.Height*mov.Videostream.Width > width*height
-		}, movies)
-	} else if mode == "sizeSmallerThan" {
-		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
-			return mov.Size < size
-		}, movies)
-	} else if mode == "sizeBiggerThan" {
-		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
-			return mov.Size > size
-		}, movies)
-	} else if mode == "list" {
-		printAllMoviesFullfillingReq(func(mov movie.Movie) bool {
-			return true
-		}, movies)
+	} else {
+		fmt.Println("No known command")
 	}
 
 }

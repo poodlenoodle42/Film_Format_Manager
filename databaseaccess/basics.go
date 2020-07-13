@@ -35,6 +35,13 @@ func CreateNewDirectoryTable(name string, db *sql.DB) error {
 	return err
 }
 
+//DeleteTable deletes a table from a database
+func DeleteTable(name string, db *sql.DB) error {
+	sqlStmt := "DROP TABLE IF EXISTS \"" + name + "\";"
+	_, err := db.Exec(sqlStmt)
+	return err
+}
+
 //AddMovie adds a given movie to a given table in a given database
 func AddMovie(mov movie.Movie, table string, db *sql.DB) error {
 	sqlStmt := "INSERT INTO \"" + table + `" (Name,FileName,Path,Format,ResolutionWidth,ResolutionHeight,Codec,BitRate,Duration,Size,NumberOfStreams,Status)

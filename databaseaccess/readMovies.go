@@ -13,7 +13,7 @@ func GetAllMovies(table string, db *sql.DB) ([]movie.Movie, error) {
 
 }
 
-//GetAvailableMovies returns a slice containing all movies marked as available from the given table
+//GetAvailableMovies returns a slice containing all movies marked as available from the given table (not used)
 func GetAvailableMovies(table string, db *sql.DB) ([]movie.Movie, error) {
 
 	sqlStmt := "SELECT * FROM \"" + table + "\" WHERE Status = 0;"
@@ -21,7 +21,7 @@ func GetAvailableMovies(table string, db *sql.DB) ([]movie.Movie, error) {
 
 }
 
-//GetMoviesByName returns a slice containing all movies having a certain name
+//GetMoviesByName returns a slice containing all movies having a certain name (not used)
 func GetMoviesByName(table string, name string, db *sql.DB) ([]movie.Movie, error) {
 	sqlStmt := "SELECT * FROM \"" + table + "\" WHERE Name = \"" + name + "\";"
 	return constructMoviesFromDatabase(sqlStmt, db)
