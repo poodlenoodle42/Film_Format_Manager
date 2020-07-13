@@ -47,19 +47,6 @@ func getMoviesInDir(dir string, lastDir string, wg *sync.WaitGroup, movies chan<
 
 }
 
-func printMovStats(mov movie.Movie) {
-	fmt.Println(mov.Name)
-	fmt.Println("\t Filename: ", mov.FileName)
-	fmt.Println("\t Format: ", mov.Format)
-	fmt.Println("\t Size: ", float64(mov.Size)/1000000.0, " MB")
-	fmt.Println("\t Duration: ", mov.Duration)
-	fmt.Println("\t Bitrate: ", mov.BitRate)
-	fmt.Println("\t Streams: ", mov.NumberOfStreams)
-	fmt.Println("\t Video Stream: ")
-	fmt.Println("\t\t Codec: ", mov.Videostream.CodecLongName)
-	fmt.Println("\t\t Resolution: ", mov.Videostream.Width, "x", mov.Videostream.Height)
-}
-
 func printAllMoviesFullfillingReq(prequsite func(movie.Movie) bool, movies <-chan movie.Movie) {
 	var moviesS []movie.Movie
 	for mov := range movies {
@@ -68,7 +55,7 @@ func printAllMoviesFullfillingReq(prequsite func(movie.Movie) bool, movies <-cha
 		}
 	}
 	for _, mov := range moviesS {
-		printMovStats(mov)
+		mov.Print()
 	}
 }
 
