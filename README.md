@@ -19,8 +19,6 @@ This Programm is build for video files but it might detect other media files too
 The detected name for *Some Crazy file name.mp4* would be *The Lord of the Rings: The Fellowship of the Ring*. This is usefull because you can change the name of the underlying file or the file itself and the detected name stays constant. Using recursive searching you can also have a folder containing other folders like *The Lord of the Rings* without affecting the result.
 ### Dependecies
 You should have *ffmpeg* and *ffprobe* installed on your system and added to the path variable. You can check whether you where succesfull by typing `ffmpeg` in your terminal.  
-#### Windows
-The sqlite driver for go uses cgo o to work.Under windows you will have to install a gcc toolchain for windows as statet here https://github.com/mattn/go-sqlite3#windows . I will try to resolve this issue.
 ### Get the Application
 When you dont want to build it from source you can download it at the release site.
 ## How to use it?
@@ -75,6 +73,8 @@ Given you have installed the golang packages correctly just type
 go build film_format_manager_main.go
 ```
 in the directory you cloned this repository to.
+### Windows
+The sqlite driver for go uses cgo o to work. Under windows you will have to install a gcc toolchain for windows as statet here https://github.com/mattn/go-sqlite3#windows . I will try to resolve this issue.
 ### Why is there every exectuable twice
 This programm uses concurrency to speed up its task. Your network storage might not like this.
 So all executables with *_asyncpreemptoff* suffix are compiled using `GODEBUG=asyncpreemptoff=1` in front of the `go build ...` comand. The hole command to build such an executable is there for:
