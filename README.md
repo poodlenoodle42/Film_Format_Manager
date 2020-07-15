@@ -74,7 +74,7 @@ go build film_format_manager_main.go
 ```
 in the directory you cloned this repository to.
 ### Windows
-The sqlite driver for go uses cgo o to work. Under windows you will have to install a gcc toolchain for windows as statet here https://github.com/mattn/go-sqlite3#windows . I will try to resolve this issue.
+The sqlite driver for go uses cgo to to work. Under windows you will have to install a gcc toolchain for windows as statet here https://github.com/mattn/go-sqlite3#windows . 
 ### Why is there every exectuable twice
 This programm uses concurrency to speed up its task. Your network storage might not like this.
 So all executables with *_asyncpreemptoff* suffix are compiled using `GODEBUG=asyncpreemptoff=1` in front of the `go build ...` comand. The hole command to build such an executable is there for:

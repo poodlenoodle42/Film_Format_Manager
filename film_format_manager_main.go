@@ -28,7 +28,7 @@ func fullUpdate(path string) {
 	moviesChan := make(chan movie.Movie)
 	var wg sync.WaitGroup
 	wg.Add(1)
-	scanmethods.GetAllMovies(path, "", &wg, moviesChan)
+	go scanmethods.GetAllMovies(path, "", &wg, moviesChan)
 	go func() {
 		wg.Wait()
 		close(moviesChan)
